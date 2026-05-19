@@ -194,7 +194,8 @@ public class CS2_Tags : BasePlugin
 				string nickColor = playerTag?["nick_color"]?.ToString() ?? ChatColors.Default.ToString();
 				string messageColor = playerTag?["message_color"]?.ToString() ?? ChatColors.Default.ToString();
 
-				Server.PrintToChatAll(ReplaceTags($" {deadIcon}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}: {messageColor}{info.GetArg(1)}", player.TeamNum));
+				// 【核心修正】在玩家名字與全形冒號之間強行插入 {ChatColors.Default} 顏色錨點，阻斷 CS2 引擎對冒號的惡意重寫
+				Server.PrintToChatAll(ReplaceTags($" {deadIcon}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}：{messageColor}{info.GetArg(1)}", player.TeamNum));
 
 				return HookResult.Handled;
 			}
@@ -214,7 +215,8 @@ public class CS2_Tags : BasePlugin
 							string nickColor = groupTag?["nick_color"]?.ToString() ?? ChatColors.Default.ToString();
 							string messageColor = groupTag?["message_color"]?.ToString() ?? ChatColors.Default.ToString();
 
-							Server.PrintToChatAll(ReplaceTags($" {deadIcon}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}: {messageColor}{info.GetArg(1)}", player.TeamNum));
+							// 【核心修正】
+							Server.PrintToChatAll(ReplaceTags($" {deadIcon}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}：{messageColor}{info.GetArg(1)}", player.TeamNum));
 
 							return HookResult.Handled;
 						}
@@ -234,7 +236,8 @@ public class CS2_Tags : BasePlugin
 							string nickColor = permissionTag?["nick_color"]?.ToString() ?? ChatColors.Default.ToString();
 							string messageColor = permissionTag?["message_color"]?.ToString() ?? ChatColors.Default.ToString();
 
-							Server.PrintToChatAll(ReplaceTags($" {deadIcon}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}: {messageColor}{info.GetArg(1)}", player.TeamNum));
+							// 【核心修正】
+							Server.PrintToChatAll(ReplaceTags($" {deadIcon}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}：{messageColor}{info.GetArg(1)}", player.TeamNum));
 
 							return HookResult.Handled;
 						}
@@ -248,7 +251,8 @@ public class CS2_Tags : BasePlugin
 				string nickColor = everyoneTag?["nick_color"]?.ToString() ?? ChatColors.Default.ToString();
 				string messageColor = everyoneTag?["message_color"]?.ToString() ?? ChatColors.Default.ToString();
 
-				Server.PrintToChatAll(ReplaceTags($" {deadIcon}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}: {messageColor}{info.GetArg(1)}", player.TeamNum));
+				// 【核心修正】
+				Server.PrintToChatAll(ReplaceTags($" {deadIcon}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}：{messageColor}{info.GetArg(1)}", player.TeamNum));
 
 				return HookResult.Handled;
 			}
@@ -268,7 +272,7 @@ public class CS2_Tags : BasePlugin
 		{
 			foreach (var p in Utilities.GetPlayers().Where(p => p.IsValid && !p.IsBot && !p.IsHLTV && AdminManager.PlayerHasPermissions(p, "@css/chat")))
 			{
-				p.PrintToChat($" {ChatColors.Lime}(ADMIN) {ChatColors.Default}{player.PlayerName}: {info.GetArg(1).Remove(0, 1)}");
+				p.PrintToChat($" {ChatColors.Lime}(ADMIN) {ChatColors.Default}{player.PlayerName}：{info.GetArg(1).Remove(0, 1)}");
 			}
 
 			return HookResult.Handled;
@@ -287,7 +291,8 @@ public class CS2_Tags : BasePlugin
 
 				foreach (var p in Utilities.GetPlayers().Where(p => p.TeamNum == player.TeamNum && p.IsValid && !p.IsBot))
 				{
-					string messageToSend = $"{deadIcon}{TeamName(player.TeamNum)} {ChatColors.Default}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}: {messageColor}{info.GetArg(1)}";
+					// 【核心修正 - 組隊聊天】
+					string messageToSend = $"{deadIcon}{TeamName(player.TeamNum)} {ChatColors.Default}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}：{messageColor}{info.GetArg(1)}";
 					p.PrintToChat($" {ReplaceTags(messageToSend, p.TeamNum)}");
 				}
 
@@ -309,7 +314,8 @@ public class CS2_Tags : BasePlugin
 
 						foreach (var p in Utilities.GetPlayers().Where(p => p.TeamNum == player.TeamNum && p.IsValid && !p.IsBot))
 						{
-							string messageToSend = $"{deadIcon}{TeamName(player.TeamNum)} {ChatColors.Default}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}: {messageColor}{info.GetArg(1)}";
+							// 【核心修正】
+							string messageToSend = $"{deadIcon}{TeamName(player.TeamNum)} {ChatColors.Default}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}：{messageColor}{info.GetArg(1)}";
 							p.PrintToChat($" {ReplaceTags(messageToSend, p.TeamNum)}");
 						}
 
@@ -330,7 +336,8 @@ public class CS2_Tags : BasePlugin
 
 						foreach (var p in Utilities.GetPlayers().Where(p => p.TeamNum == player.TeamNum && p.IsValid && !p.IsBot))
 						{
-							string messageToSend = $"{deadIcon}{TeamName(player.TeamNum)} {ChatColors.Default}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}: {messageColor}{info.GetArg(1)}";
+							// 【核心修正】
+							string messageToSend = $"{deadIcon}{TeamName(player.TeamNum)} {ChatColors.Default}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}：{messageColor}{info.GetArg(1)}";
 							p.PrintToChat($" {ReplaceTags(messageToSend, p.TeamNum)}");
 						}
 
@@ -347,7 +354,8 @@ public class CS2_Tags : BasePlugin
 
 				foreach (var p in Utilities.GetPlayers().Where(p => p.TeamNum == player.TeamNum && p.IsValid && !p.IsBot))
 				{
-					string messageToSend = $"{deadIcon}{TeamName(player.TeamNum)} {ChatColors.Default}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}: {messageColor}{info.GetArg(1)}";
+					// 【核心修正】
+					string messageToSend = $"{deadIcon}{TeamName(player.TeamNum)} {ChatColors.Default}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}：{messageColor}{info.GetArg(1)}";
 					p.PrintToChat($" {ReplaceTags(messageToSend, p.TeamNum)}");
 				}
 
@@ -475,7 +483,6 @@ public class CS2_Tags : BasePlugin
 		return teamColor;
 	}
 
-	// 【核心修正】優化此方法，使其支援不分大小寫的顏色代碼替換（例如 {GOLD} 或 {gold}）
 	private string ReplaceTags(string message, int teamNum = 0)
 	{
 		if (message.Contains('{'))
@@ -485,10 +492,8 @@ public class CS2_Tags : BasePlugin
 			{
 				string pattern = $"{{{field.Name}}}";
 				
-				// 檢查當前訊息是否包含該標籤（忽略大小寫）
 				if (modifiedValue.Contains(pattern, StringComparison.OrdinalIgnoreCase))
 				{
-					// 使用高度相容的方法，進行忽略大小寫的字串取代
 					modifiedValue = System.Text.RegularExpressions.Regex.Replace(
 						modifiedValue, 
 						System.Text.RegularExpressions.Regex.Escape(pattern), 
@@ -498,7 +503,6 @@ public class CS2_Tags : BasePlugin
 				}
 			}
 			
-			// 同步處理 {TEAMCOLOR} 標籤（忽略大小寫）
 			return System.Text.RegularExpressions.Regex.Replace(
 				modifiedValue, 
 				"\\{TEAMCOLOR\\}", 
