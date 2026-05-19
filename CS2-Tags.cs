@@ -1,4 +1,4 @@
-﻿using CounterStrikeSharp.API;
+using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
@@ -350,7 +350,6 @@ public class CS2_Tags : BasePlugin
 					string messageToSend = $"{deadIcon}{TeamName(player.TeamNum)} {ChatColors.Default}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}: {messageColor}{info.GetArg(1)}";
 					p.PrintToChat($" {ReplaceTags(messageToSend, p.TeamNum)}");
 				}
-				//p.PrintToChat(ReplaceTags($" {TeamName(player.TeamNum)} {ChatColors.Default}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}: {messageColor}{info.GetArg(1)}", p.TeamNum));
 
 				return HookResult.Handled;
 			}
@@ -476,6 +475,7 @@ public class CS2_Tags : BasePlugin
 		return teamColor;
 	}
 
+	// 【核心修正】優化此方法，使其支援不分大小寫的顏色代碼替換（例如 {GOLD} 或 {gold}）
 	private string ReplaceTags(string message, int teamNum = 0)
 	{
 		if (message.Contains('{'))
@@ -484,12 +484,27 @@ public class CS2_Tags : BasePlugin
 			foreach (FieldInfo field in typeof(ChatColors).GetFields())
 			{
 				string pattern = $"{{{field.Name}}}";
-				if (message.Contains(pattern, StringComparison.OrdinalIgnoreCase))
+				
+				// 檢查當前訊息是否包含該標籤（忽略大小寫）
+				if (modifiedValue.Contains(pattern, StringComparison.OrdinalIgnoreCase))
 				{
-					modifiedValue = modifiedValue.Replace(pattern, field.GetValue(null)!.ToString(), StringComparison.OrdinalIgnoreCase);
+					// 使用高度相容的方法，進行忽略大小寫的字串取代
+					modifiedValue = System.Text.RegularExpressions.Regex.Replace(
+						modifiedValue, 
+						System.Text.RegularExpressions.Regex.Escape(pattern), 
+						field.GetValue(null)!.ToString()!, 
+						System.Text.RegularExpressions.RegexOptions.IgnoreCase
+					);
 				}
 			}
-			return modifiedValue.Replace("{TEAMCOLOR}", TeamColor(teamNum));
+			
+			// 同步處理 {TEAMCOLOR} 標籤（忽略大小寫）
+			return System.Text.RegularExpressions.Regex.Replace(
+				modifiedValue, 
+				"\\{TEAMCOLOR\\}", 
+				TeamColor(teamNum), 
+				System.Text.RegularExpressions.RegexOptions.IgnoreCase
+			);
 		}
 
 		return message;
