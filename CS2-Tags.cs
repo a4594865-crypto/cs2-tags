@@ -17,6 +17,30 @@ using System.Collections.Concurrent;
 
 namespace CS2_Tags;
 
+// ==========================================
+// 【設定檔結構定義】 補在此處解決編譯找不到型別的問題
+// ==========================================
+public class CS2_TagsConfig : BasePluginConfig
+{
+    public string ApiUrl { get; set; } = "http://localhost:3000";
+    public int UpdateIntervalSeconds { get; set; } = 60;
+    public bool PrefixEnabled { get; set; } = true;
+    public string TagPrefix { get; set; } = "[";
+    public string TagSuffix { get; set; } = "]";
+    public string PrefixSeparator { get; set; } = " : ";
+    public string PlayerCustomFont { get; set; } = "";
+    public bool Debug { get; set; } = false;
+}
+
+public static class CS2_TagsHelper
+{
+    public static string GetClosestChatColor(string hexOrColor)
+    {
+        if (hexOrColor.StartsWith("{") && hexOrColor.EndsWith("}")) return hexOrColor;
+        return "{Default}";
+    }
+}
+
 [MinimumApiVersion(159)]
 public class CS2_Tags : BasePlugin, IPluginConfig<CS2_TagsConfig>
 {
@@ -30,7 +54,7 @@ public class CS2_Tags : BasePlugin, IPluginConfig<CS2_TagsConfig>
     public override string ModuleName => "CS2-Tags";
     public override string ModuleDescription => "Add player tags easily in cs2 game via API";
     public override string ModuleAuthor => "daffyy, extended";
-    public override string ModuleVersion => "1.1.12_FullWidthColon";
+    public override string ModuleVersion => "1.1.12_FullWidthColonFixed";
 
     private string? ApiPrefixFont { get; set; }
     private string? ApiPrefixSeparator { get; set; }
@@ -332,7 +356,6 @@ public class CS2_Tags : BasePlugin, IPluginConfig<CS2_TagsConfig>
         {
             if (File.Exists(filepath))
             {
-                var jsonData = File.WriteAllText(filepath); // 這裡修正了原代碼可能手誤的寫法
                 var jsonDataRead = File.ReadAllText(filepath);
                 JsonTags = JObject.Parse(jsonDataRead);
                 if (JsonTags["ordered_flags"] is JArray arr)
@@ -454,7 +477,6 @@ public class CS2_Tags : BasePlugin, IPluginConfig<CS2_TagsConfig>
                 string nickColor = assignedTag?["nick_color"]?.ToString() ?? ChatColors.Default.ToString();
                 string messageColor = assignedTag?["message_color"]?.ToString() ?? ChatColors.Default.ToString();
 
-                // 【已修正】更換為全形「：」並注入顏色標籤，防止 CS2 引擎強制覆寫
                 Server.PrintToChatAll(ReplaceTags($" {deadIcon}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}：{messageColor}{info.GetArg(1)}", player.TeamNum));
                 return HookResult.Handled;
             }
@@ -466,7 +488,6 @@ public class CS2_Tags : BasePlugin, IPluginConfig<CS2_TagsConfig>
                 string nickColor = playerTag?["nick_color"]?.ToString() ?? ChatColors.Default.ToString();
                 string messageColor = playerTag?["message_color"]?.ToString() ?? ChatColors.Default.ToString();
 
-                // 【已修正】
                 Server.PrintToChatAll(ReplaceTags($" {deadIcon}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}：{messageColor}{info.GetArg(1)}", player.TeamNum));
                 return HookResult.Handled;
             }
@@ -487,7 +508,6 @@ public class CS2_Tags : BasePlugin, IPluginConfig<CS2_TagsConfig>
                         string nickColor = permTag["nick_color"]?.ToString() ?? ChatColors.Default.ToString();
                         string messageColor = permTag["message_color"]?.ToString() ?? ChatColors.Default.ToString();
 
-                        // 【已修正】
                         Server.PrintToChatAll(ReplaceTags($" {deadIcon}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}：{messageColor}{info.GetArg(1)}", player.TeamNum));
                         return HookResult.Handled;
                     }
@@ -501,7 +521,6 @@ public class CS2_Tags : BasePlugin, IPluginConfig<CS2_TagsConfig>
                 string nickColor = everyoneObject["nick_color"]?.ToString() ?? ChatColors.Default.ToString();
                 string messageColor = everyoneObject["message_color"]?.ToString() ?? ChatColors.Default.ToString();
 
-                // 【已修正】
                 Server.PrintToChatAll(ReplaceTags($" {deadIcon}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}：{messageColor}{info.GetArg(1)}", player.TeamNum));
                 return HookResult.Handled;
             }
@@ -521,7 +540,6 @@ public class CS2_Tags : BasePlugin, IPluginConfig<CS2_TagsConfig>
         {
             foreach (var p in Utilities.GetPlayers().Where(p => p.IsValid && !p.IsBot && !p.IsHLTV && AdminManager.PlayerHasPermissions(p, "@css/chat")))
             {
-                // 【已修正 - 管理員專用廣播】
                 p.PrintToChat($" {ChatColors.Lime}(ADMIN) {ChatColors.Default}{player.PlayerName}{ChatColors.Default}： {info.GetArg(1).Remove(0, 1)}");
             }
             return HookResult.Handled;
@@ -542,7 +560,6 @@ public class CS2_Tags : BasePlugin, IPluginConfig<CS2_TagsConfig>
 
                 foreach (var p in Utilities.GetPlayers().Where(p => p.TeamNum == player.TeamNum && p.IsValid && !p.IsBot))
                 {
-                    // 【已修正 - 組隊聊天】
                     string messageToSend = $"{deadIcon}{TeamName(player.TeamNum)} {ChatColors.Default}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}：{messageColor}{info.GetArg(1)}";
                     p.PrintToChat($" {ReplaceTags(messageToSend, p.TeamNum)}");
                 }
@@ -558,7 +575,6 @@ public class CS2_Tags : BasePlugin, IPluginConfig<CS2_TagsConfig>
 
                 foreach (var p in Utilities.GetPlayers().Where(p => p.TeamNum == player.TeamNum && p.IsValid && !p.IsBot))
                 {
-                    // 【已修正】
                     string messageToSend = $"{deadIcon}{TeamName(player.TeamNum)} {ChatColors.Default}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}：{messageColor}{info.GetArg(1)}";
                     p.PrintToChat($" {ReplaceTags(messageToSend, p.TeamNum)}");
                 }
@@ -583,7 +599,6 @@ public class CS2_Tags : BasePlugin, IPluginConfig<CS2_TagsConfig>
 
                         foreach (var p in Utilities.GetPlayers().Where(p => p.TeamNum == player.TeamNum && p.IsValid && !p.IsBot))
                         {
-                            // 【已修正】
                             string messageToSend = $"{deadIcon}{TeamName(player.TeamNum)} {ChatColors.Default}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}：{messageColor}{info.GetArg(1)}";
                             p.PrintToChat($" {ReplaceTags(messageToSend, p.TeamNum)}");
                         }
@@ -601,7 +616,6 @@ public class CS2_Tags : BasePlugin, IPluginConfig<CS2_TagsConfig>
 
                 foreach (var p in Utilities.GetPlayers().Where(p => p.TeamNum == player.TeamNum && p.IsValid && !p.IsBot))
                 {
-                    // 【已修正】
                     string messageToSend = $"{deadIcon}{TeamName(player.TeamNum)} {ChatColors.Default}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}：{messageColor}{info.GetArg(1)}";
                     p.PrintToChat($" {ReplaceTags(messageToSend, p.TeamNum)}");
                 }
