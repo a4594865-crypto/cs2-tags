@@ -18,13 +18,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4 # 升級至 v4 提升穩定性
+
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4 # 升級至 v4
       with:
-        dotnet-version: 7.0.x
+        dotnet-version: 8.0.x # 【核心修正】將 .NET 7 升級至 .NET 8 確保相容最新 API
+
     - name: Restore
       run: dotnet restore
+
     - name: Build
       run: dotnet build ${{ env.PROJECT_PATH }} -c WeaponPaints -o ${{ env.OUTPUT_PATH }}
 
@@ -34,28 +37,34 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4 # 升級至 v4
+
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4 # 升級至 v4
       with:
-        dotnet-version: 7.0.x
+        dotnet-version: 8.0.x # 【核心修正】同步升級為 .NET 8
+
     - name: Restore
       run: dotnet restore
+
     - name: Build
       run: dotnet build ${{ env.PROJECT_PATH }} -c WeaponPaints -o ${{ env.OUTPUT_PATH }}
+
     - name: Clean files
       run: |
         rm -f \
           ${{ env.OUTPUT_PATH }}/CounterStrikeSharp.API.dll \
           ${{ env.OUTPUT_PATH }}/McMaster.NETCore.Plugins.dll \
           ${{ env.OUTPUT_PATH }}/Microsoft.DotNet.PlatformAbstractions.dll \
-          ${{ env.OUTPUT_PATH }}/Microsoft.Extensions.DependencyModel.dll \
+          ${{ env.OUTPUT_PATH }}/Microsoft.Extensions.DependencyModel.dll
+
     - name: Zip
       uses: thedoctor0/zip-release@0.7.5
       with:
         type: 'zip'
         filename: '${{ env.PROJECT_NAME }}.zip'
         path: ${{ env.OUTPUT_PATH }}
+
     - name: CS2-Tags
       uses: ncipollo/release-action@v1.12.0
       with:
