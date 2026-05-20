@@ -19,7 +19,7 @@ public class CS2_Tags : BasePlugin
 	public override string ModuleName => "CS2-Tags";
 	public override string ModuleDescription => "Add player tags easily in cs2 game";
 	public override string ModuleAuthor => "daffyy";
-	public override string ModuleVersion => "1.0.4c_FullWidthColon";
+	public override string ModuleVersion => "1.0.5_ScoreboardSpaceFixed";
 
 	public override void Load(bool hotReload)
 	{
@@ -194,7 +194,6 @@ public class CS2_Tags : BasePlugin
 				string nickColor = playerTag?["nick_color"]?.ToString() ?? ChatColors.Default.ToString();
 				string messageColor = playerTag?["message_color"]?.ToString() ?? ChatColors.Default.ToString();
 
-				// 【已修正】將原先的 ": " 改為全形 "： "
 				Server.PrintToChatAll(ReplaceTags($" {deadIcon}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}：{messageColor}{info.GetArg(1)}", player.TeamNum));
 
 				return HookResult.Handled;
@@ -215,7 +214,6 @@ public class CS2_Tags : BasePlugin
 							string nickColor = groupTag?["nick_color"]?.ToString() ?? ChatColors.Default.ToString();
 							string messageColor = groupTag?["message_color"]?.ToString() ?? ChatColors.Default.ToString();
 
-							// 【已修正】將原先的 ": " 改為全形 "： "
 							Server.PrintToChatAll(ReplaceTags($" {deadIcon}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}：{messageColor}{info.GetArg(1)}", player.TeamNum));
 
 							return HookResult.Handled;
@@ -236,7 +234,6 @@ public class CS2_Tags : BasePlugin
 							string nickColor = permissionTag?["nick_color"]?.ToString() ?? ChatColors.Default.ToString();
 							string messageColor = permissionTag?["message_color"]?.ToString() ?? ChatColors.Default.ToString();
 
-							// 【已修正】將原先的 ": " 改為全形 "： "
 							Server.PrintToChatAll(ReplaceTags($" {deadIcon}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}：{messageColor}{info.GetArg(1)}", player.TeamNum));
 
 							return HookResult.Handled;
@@ -251,7 +248,6 @@ public class CS2_Tags : BasePlugin
 				string nickColor = everyoneTag?["nick_color"]?.ToString() ?? ChatColors.Default.ToString();
 				string messageColor = everyoneTag?["message_color"]?.ToString() ?? ChatColors.Default.ToString();
 
-				// 【已修正】將原先的 ": " 改為全形 "： "
 				Server.PrintToChatAll(ReplaceTags($" {deadIcon}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}：{messageColor}{info.GetArg(1)}", player.TeamNum));
 
 				return HookResult.Handled;
@@ -272,7 +268,6 @@ public class CS2_Tags : BasePlugin
 		{
 			foreach (var p in Utilities.GetPlayers().Where(p => p.IsValid && !p.IsBot && !p.IsHLTV && AdminManager.PlayerHasPermissions(p, "@css/chat")))
 			{
-				// 【已修正】將管理員專用頻道的 ": " 改為全形 "： "
 				p.PrintToChat($" {ChatColors.Lime}(ADMIN) {ChatColors.Default}{player.PlayerName}：{info.GetArg(1).Remove(0, 1)}");
 			}
 
@@ -292,7 +287,6 @@ public class CS2_Tags : BasePlugin
 
 				foreach (var p in Utilities.GetPlayers().Where(p => p.TeamNum == player.TeamNum && p.IsValid && !p.IsBot))
 				{
-					// 【已修正】將原先的 ": " 改為全形 "： "
 					string messageToSend = $"{deadIcon}{TeamName(player.TeamNum)} {ChatColors.Default}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}：{messageColor}{info.GetArg(1)}";
 					p.PrintToChat($" {ReplaceTags(messageToSend, p.TeamNum)}");
 				}
@@ -315,7 +309,6 @@ public class CS2_Tags : BasePlugin
 
 						foreach (var p in Utilities.GetPlayers().Where(p => p.TeamNum == player.TeamNum && p.IsValid && !p.IsBot))
 						{
-							// 【已修正】將原先的 ": " 改為全形 "： "
 							string messageToSend = $"{deadIcon}{TeamName(player.TeamNum)} {ChatColors.Default}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}：{messageColor}{info.GetArg(1)}";
 							p.PrintToChat($" {ReplaceTags(messageToSend, p.TeamNum)}");
 						}
@@ -337,7 +330,6 @@ public class CS2_Tags : BasePlugin
 
 						foreach (var p in Utilities.GetPlayers().Where(p => p.TeamNum == player.TeamNum && p.IsValid && !p.IsBot))
 						{
-							// 【已修正】將原先的 ": " 改為全形 "： "
 							string messageToSend = $"{deadIcon}{TeamName(player.TeamNum)} {ChatColors.Default}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}：{messageColor}{info.GetArg(1)}";
 							p.PrintToChat($" {ReplaceTags(messageToSend, p.TeamNum)}");
 						}
@@ -355,7 +347,6 @@ public class CS2_Tags : BasePlugin
 
 				foreach (var p in Utilities.GetPlayers().Where(p => p.TeamNum == player.TeamNum && p.IsValid && !p.IsBot))
 				{
-					// 【已修正】將原先的 ": " 改為全形 "： "
 					string messageToSend = $"{deadIcon}{TeamName(player.TeamNum)} {ChatColors.Default}{prefix}{nickColor}{player.PlayerName}{ChatColors.Default}：{messageColor}{info.GetArg(1)}";
 					p.PrintToChat($" {ReplaceTags(messageToSend, p.TeamNum)}");
 				}
@@ -379,7 +370,8 @@ public class CS2_Tags : BasePlugin
 				var scoreboardValue = playerTag["scoreboard"]?.ToString();
 				if (!string.IsNullOrEmpty(scoreboardValue))
 				{
-					player.Clan = scoreboardValue;
+					// 【核心修改】透過強行與特殊空白（\u2004：1/4寬度空白）結合，繞過遊戲 Trim 機制
+					player.Clan = scoreboardValue + "\u2004";
 					return;
 				}
 			}
@@ -398,7 +390,7 @@ public class CS2_Tags : BasePlugin
 							var scoreboardValue = groupTag["scoreboard"]?.ToString();
 							if (!string.IsNullOrEmpty(scoreboardValue))
 							{
-								player.Clan = scoreboardValue;
+								player.Clan = scoreboardValue + "\u2004";
 								return;
 							}
 						}
@@ -417,7 +409,7 @@ public class CS2_Tags : BasePlugin
 							var scoreboardValue = permissionTag["scoreboard"]?.ToString();
 							if (!string.IsNullOrEmpty(scoreboardValue))
 							{
-								player.Clan = scoreboardValue;
+								player.Clan = scoreboardValue + "\u2004";
 								return;
 							}
 						}
@@ -430,7 +422,7 @@ public class CS2_Tags : BasePlugin
 				var scoreboardValue = everyoneObject["scoreboard"]?.ToString();
 				if (!string.IsNullOrEmpty(scoreboardValue))
 				{
-					player.Clan = scoreboardValue;
+					player.Clan = scoreboardValue + "\u2004";
 				}
 			}
 		}
