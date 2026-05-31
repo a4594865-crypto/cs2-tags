@@ -8,6 +8,10 @@ using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Utils;
 using Newtonsoft.Json.Linq;
 using System.Reflection;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System;
 
 namespace CS2_Tags;
 
@@ -18,8 +22,23 @@ public class CS2_Tags : BasePlugin
 	public static JObject? JsonTags { get; private set; }
 	public override string ModuleName => "CS2-Tags";
 	public override string ModuleDescription => "Add player tags easily in cs2 game";
-	public override string ModuleAuthor => "daffyy";
-	public override string ModuleVersion => "1.0.5_ScoreboardSpaceFixed";
+	public override string ModuleAuthor => "daffyy (Optimized)";
+	public override string ModuleVersion => "1.0.6";
+
+	// 效能優化：事先將顏色 pattern 緩存起來，避免每次打字都執行高消耗的「反射」
+	private static readonly Dictionary<string, string> ColorCache = new(StringComparer.OrdinalIgnoreCase);
+
+	static CS2_Tags()
+	{
+		foreach (FieldInfo field in typeof(ChatColors).GetFields(BindingFlags.Public | BindingFlags.Static))
+		{
+			var val = field.GetValue(null)?.ToString();
+			if (val != null)
+			{
+				ColorCache[$"{{{field.Name}}}"] = val;
+			}
+		}
+	}
 
 	public override void Load(bool hotReload)
 	{
@@ -106,7 +125,7 @@ public class CS2_Tags : BasePlugin
 	{
 		string? steamid = command.GetArg(1);
 
-		if (steamid.Length == 17)
+		if (steamid != null && steamid.Length == 17)
 		{
 			if (!GaggedIds.Contains(steamid))
 				GaggedIds.Add(steamid);
@@ -119,7 +138,7 @@ public class CS2_Tags : BasePlugin
 	{
 		string? steamid = command.GetArg(1);
 
-		if (steamid.Length == 17)
+		if (steamid != null && steamid.Length == 17)
 		{
 			if (GaggedIds.Contains(steamid))
 				GaggedIds.Remove(steamid);
@@ -152,7 +171,11 @@ public class CS2_Tags : BasePlugin
 
 		if (player == null || !player.IsValid || player.IsBot || player.IsHLTV) return;
 
-		GaggedIds.Remove(player.SteamID.ToString()!);
+		// 安全修正：防止 SteamID 尚未取得時為 null 導致的異常
+		if (player.AuthorizedSteamID != null)
+		{
+			GaggedIds.Remove(player.AuthorizedSteamID.SteamId64.ToString());
+		}
 	}
 
 	private HookResult OnPlayerSpawn(EventPlayerSpawn @event, GameEventInfo info)
@@ -180,7 +203,8 @@ public class CS2_Tags : BasePlugin
 		if (player == null || !player.IsValid || info.GetArg(1).Length == 0 || player.AuthorizedSteamID == null) return HookResult.Continue;
 		string steamid = player.AuthorizedSteamID.SteamId64.ToString();
 
-		if (player.SteamID.ToString() != "" && GaggedIds.Contains(player.SteamID.ToString())) return HookResult.Handled;
+		// 安全修正：使用安全的方式比對 Gagged 狀態，防止 NullReferenceException
+		if (GaggedIds.Contains(steamid)) return HookResult.Handled;
 
 		if (info.GetArg(1).StartsWith("!") || info.GetArg(1).StartsWith("@") || info.GetArg(1).StartsWith("/") || info.GetArg(1).StartsWith(".") || info.GetArg(1) == "rtv") return HookResult.Continue;
 
@@ -242,7 +266,8 @@ public class CS2_Tags : BasePlugin
 				}
 			}
 
-			if (tagsObject.TryGetValue("everyone", out var everyoneTag) && everyoneTag is JObject && everyoneTag?["team_chat"]?.Value<bool>() == true)
+			// 邏輯修正：移除錯誤的 team_chat 限制，確保普通玩家在全域聊天室也能顯示「everyone」稱號
+			if (tagsObject.TryGetValue("everyone", out var everyoneTag) && everyoneTag is JObject)
 			{
 				string prefix = everyoneTag["prefix"]?.ToString() ?? "";
 				string nickColor = everyoneTag?["nick_color"]?.ToString() ?? ChatColors.Default.ToString();
@@ -262,7 +287,8 @@ public class CS2_Tags : BasePlugin
 		if (player == null || !player.IsValid || info.GetArg(1).Length == 0 || player.AuthorizedSteamID == null) return HookResult.Continue;
 		string steamid = player.AuthorizedSteamID.SteamId64.ToString();
 
-		if (player.SteamID.ToString() != "" && GaggedIds.Contains(player.SteamID.ToString())) return HookResult.Handled;
+		//  安全修正：防止 Null 指標異常
+		if (GaggedIds.Contains(steamid)) return HookResult.Handled;
 
 		if (info.GetArg(1).StartsWith("@") && AdminManager.PlayerHasPermissions(player, "@css/chat"))
 		{
@@ -361,7 +387,7 @@ public class CS2_Tags : BasePlugin
 	{
 		if (player == null || !player.IsValid || player.IsBot || player.IsHLTV || player.AuthorizedSteamID == null) return;
 
-		string steamid = player.SteamID!.ToString();
+		string steamid = player.AuthorizedSteamID.SteamId64.ToString();
 
 		if (JsonTags != null && JsonTags.TryGetValue("tags", out var tags) && tags is JObject tagsObject)
 		{
@@ -370,7 +396,6 @@ public class CS2_Tags : BasePlugin
 				var scoreboardValue = playerTag["scoreboard"]?.ToString();
 				if (!string.IsNullOrEmpty(scoreboardValue))
 				{
-					// 【核心修改】透過強行與特殊空白（\u2004：1/4寬度空白）結合，繞過遊戲 Trim 機制
 					player.Clan = scoreboardValue + "\u2004";
 					return;
 				}
@@ -430,68 +455,41 @@ public class CS2_Tags : BasePlugin
 
 	private string TeamName(int teamNum)
 	{
-		string teamName = "";
-
-		switch (teamNum)
+		return teamNum switch
 		{
-			case 0:
-				teamName = $"(NONE)";
-				break;
-
-			case 1:
-				teamName = $"(SPEC)";
-				break;
-
-			case 2:
-				teamName = $"{ChatColors.Yellow}(T)";
-				break;
-
-			case 3:
-				teamName = $"{ChatColors.Blue}(CT)";
-				break;
-		}
-
-		return teamName;
+			0 => "(NONE)",
+			1 => "(SPEC)",
+			2 => $"{ChatColors.Yellow}(T)",
+			3 => $"{ChatColors.Blue}(CT)",
+			_ => ""
+		};
 	}
 
 	private string TeamColor(int teamNum)
 	{
-		string teamColor;
-
-		switch (teamNum)
+		return teamNum switch
 		{
-			case 2:
-				teamColor = $"{ChatColors.Gold}";
-				break;
-
-			case 3:
-				teamColor = $"{ChatColors.Blue}";
-				break;
-
-			default:
-				teamColor = "";
-				break;
-		}
-
-		return teamColor;
+			2 => $"{ChatColors.Gold}",
+			3 => $"{ChatColors.Blue}",
+			_ => ""
+		};
 	}
 
 	private string ReplaceTags(string message, int teamNum = 0)
 	{
-		if (message.Contains('{'))
+		if (!message.Contains('{')) return message;
+
+		string modifiedValue = message;
+
+		//效能優化：使用快取的 ColorCache 取代高能耗的 Reflection 反射，打字更順暢
+		foreach (var (pattern, colorCode) in ColorCache)
 		{
-			string modifiedValue = message;
-			foreach (FieldInfo field in typeof(ChatColors).GetFields())
+			if (modifiedValue.Contains(pattern, StringComparison.OrdinalIgnoreCase))
 			{
-				string pattern = $"{{{field.Name}}}";
-				if (message.Contains(pattern, StringComparison.OrdinalIgnoreCase))
-				{
-					modifiedValue = modifiedValue.Replace(pattern, field.GetValue(null)!.ToString(), StringComparison.OrdinalIgnoreCase);
-				}
+				modifiedValue = modifiedValue.Replace(pattern, colorCode, StringComparison.OrdinalIgnoreCase);
 			}
-			return modifiedValue.Replace("{TEAMCOLOR}", TeamColor(teamNum));
 		}
 
-		return message;
+		return modifiedValue.Replace("{TEAMCOLOR}", TeamColor(teamNum));
 	}
 }
